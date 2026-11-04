@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en-NZ">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7f4" />
+    <meta name="description" content="An interactive New Zealand general election simulator with the official 2026 electorate boundaries." />
+    <title>Aotearoa Election Simulator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="results.css" />
+    <link rel="stylesheet" href="chamber.css" />
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script defer src="data/general-boundaries.js"></script>
+    <script defer src="data/maori-boundaries.js"></script>
+    <script defer src="data/new-zealand-land.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Aotearoa Election Simulator home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="brand-copy"><strong>TE PŌTI</strong><small>AOTEAROA ELECTION SIMULATOR</small></span>
+      </a>
+      <div class="topbar-right">
+        <span class="boundary-tag"><span class="live-dot"></span>2026 BOUNDARIES</span>
+        <button class="button button-quiet" id="resetButton" type="button" title="Reset the map and vote assumptions">Reset scenario</button>
+      </div>
+    </header>
+
+    <main id="top" class="page-shell">
+      <section class="intro-row">
+        <div>
+          <p class="eyebrow">YOUR ELECTION, YOUR CALL</p>
+          <h1>Build a Parliament.</h1>
+          <p class="intro-copy">Choose who wins each electorate, adjust the party vote, and see how the numbers come together under MMP.</p>
+        </div>
+        <div class="quick-facts" aria-label="Election facts">
+          <div class="fact"><span class="fact-number">71</span><span class="fact-label">electorate seats</span></div>
+          <span class="fact-divider"></span>
+          <div class="fact"><span class="fact-number">120</span><span class="fact-label">base Parliament</span></div>
+          <span class="fact-divider"></span>
+          <div class="fact"><span class="fact-number">MMP</span><span class="fact-label">seat allocation</span></div>
+        </div>
+      </section>
+
+      <div class="workspace-grid">
+        <div class="left-column">
+        <section class="map-card panel" aria-label="Electorate map">
+          <div class="map-card-head">
+            <div class="map-heading">
+              <div>
+                <p class="eyebrow">2026 GENERAL ELECTION</p>
+                <h2>Electorate map</h2>
+              </div>
+              <span class="map-count" id="mapCount">64 electorates</span>
+            </div>
+            <div class="map-tools">
+              <div class="tab-list" role="tablist" aria-label="Electorate type">
+                <button class="map-tab active" type="button" role="tab" aria-selected="true" data-map="general">General <span>64</span></button>
+                <button class="map-tab" type="button" role="tab" aria-selected="false" data-map="maori">Māori <span>7</span></button>
+              </div>
+              <label class="search-box" for="seatSearch">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.8"></circle><path d="m13 13 4.3 4.3"></path></svg>
+                <input id="seatSearch" type="search" placeholder="Find an electorate" autocomplete="off" />
+              </label>
+            </div>
+          </div>
+          <div class="map-wrap">
+            <div id="map" aria-label="Interactive map of New Zealand electorates"></div>
+            <div class="map-loading" id="mapLoading"><span class="loader"></span><span>Loading official electorate boundaries…</span></div>
+            <div class="map-error hidden" id="mapError">
+              <span class="error-icon">!</span>
+              <strong>Boundary data couldn’t load</strong>
+              <span>Check your internet connection and reload the page.</span>
+              <button class="button button-small" id="retryMap" type="button">Try again</button>
+            </div>
+            <div class="map-hint"><span class="hint-icon">↖</span> Click a seat to assign a party <span class="hint-divider">·</span> Scroll or use + / − to zoom</div>
+          </div>
+          <div class="map-footer">
+            <div class="map-legend"><span class="legend-mark"></span>Not assigned <span class="legend-separator"></span><span class="legend-note">Party colours appear as you make your picks</span></div>
+            <button class="text-button" id="clearMapButton" type="button">Clear this map</button>
+          </div>
+        </section>
+
+        <section class="panel chamber-panel" aria-labelledby="chamberTitle">
+          <div class="chamber-heading">
+            <div>
+              <p class="eyebrow">THE HOUSE</p>
+              <h2 id="chamberTitle">Parliament seat map</h2>
+              <p class="chamber-description">Each dot is one seat. The 120-seat chamber shows party-vote entitlements; any overhang seats sit below.</p>
+            </div>
+            <div class="chamber-totals"><span id="chamberBaseTotal">120 base seats</span><strong id="chamberOverhangTotal">+0 overhang</strong></div>
+          </div>
+          <div class="chamber-legend" id="chamberLegend" aria-label="Seat map party counts"></div>
+          <div class="chamber-viewport">
+            <svg id="chamberMap" class="chamber-map" viewBox="0 0 740 440" role="img" aria-labelledby="chamberTitle chamberDescription"></svg>
+          </div>
+          <p class="chamber-caption" id="chamberDescription">Hover a dot to see its electorate or List MP label. Overhang dots underneath show extra electorate MPs.</p>
+        </section>
+        </div>
+
+        <aside class="side-column">
+          <section class="panel seat-panel">
+            <div class="section-topline"><p class="eyebrow">MAKE YOUR PICK</p><span class="seat-index" id="seatIndex">NO SEAT SELECTED</span></div>
+            <div id="emptySelection" class="empty-selection">
+              <div class="selection-icon" aria-hidden="true"><span>＋</span></div>
+              <h2>Select an electorate</h2>
+              <p>Click a region on the map, then choose the party you think will win it.</p>
+            </div>
+            <div id="activeSelection" class="active-selection hidden">
+              <div class="selected-seat-heading"><span class="selected-seat-dot" id="selectedSeatDot"></span><h2 id="selectedSeatName"></h2></div>
+              <p class="selection-subtitle" id="selectedSeatType">General electorate</p>
+              <div class="party-choice-grid" id="partyChoices" aria-label="Assign electorate to a party"></div>
+              <button class="clear-seat-button" id="clearSeatButton" type="button">Remove party assignment</button>
+            </div>
+          </section>
+
+          <section class="panel parliament-panel">
+            <div class="parliament-heading-row">
+              <div><p class="eyebrow">THE RESULT</p><h2>Parliament outlook</h2></div>
+              <span class="scenario-badge">ILLUSTRATIVE</span>
+            </div>
+            <div class="house-summary">
+              <div class="house-total"><strong id="houseTotal">120</strong><span>seats in the House</span></div>
+              <div class="majority-mark"><span>Majority</span><strong id="majorityMark">61</strong></div>
+            </div>
+            <div class="seat-bar-shell">
+              <div class="seat-bar" id="seatBar" aria-label="Party seat share"></div>
+              <span class="majority-line" id="majorityLine" aria-hidden="true"></span>
+            </div>
+            <div class="seat-bar-legend" id="seatBarLegend"></div>
+            <div class="seat-table-wrap">
+              <table class="seat-table">
+                <thead><tr><th>Party</th><th>Elect.</th><th>Entitled</th><th>List</th><th>Total</th></tr></thead>
+                <tbody id="seatRows"></tbody>
+                <tfoot id="seatFoot"></tfoot>
+              </table>
+            </div>
+            <div class="overhang-row" id="overhangRow">
+              <span class="overhang-icon">↗</span><span class="overhang-label">Extra seats added <small>electorate wins above party-vote entitlement</small></span><strong id="overhangValue">+0</strong>
+              <span class="overhang-help" title="Extra MPs are added when a party wins more electorates than its proportional entitlement.">i</span>
+            </div>
+          </section>
+
+          <section class="panel vote-panel">
+            <div class="vote-heading"><div><p class="eyebrow">TUNE THE NUMBERS</p><h2>Party vote</h2></div><span class="vote-total" id="voteTotal">100%</span></div>
+            <p class="vote-intro">The starter shares are illustrative, not a forecast. Adjust them to explore a scenario.</p>
+            <div class="vote-inputs" id="voteInputs"></div>
+            <p class="vote-footnote"><span class="info-dot">i</span> Parties qualify with at least 5% or one electorate seat. The 120-seat entitlement is apportioned by Sainte-Laguë.</p>
+          </section>
+        </aside>
+      </div>
+      <footer class="page-footer">
+        <span>Made for exploring possibilities. Vote assumptions are yours to set.</span>
+        <span>Boundaries: <a href="https://elections.nz/democracy-in-nz/historical-events/boundary-review-2025/" target="_blank" rel="noreferrer">Representation Commission 2025</a> · Coastline: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Natural Earth</a></span>
+      </footer>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
