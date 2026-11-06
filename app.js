@@ -207,10 +207,9 @@ function electorateNamesByParty() {
 }
 function sainteLagueShares() {
   const totalVotes = voteSum();
-  const electorate = electorateCounts();
   const qualified = PARTY_LIST.filter((party) => {
     const share = totalVotes > 0 ? (Number(state.votes[party.id] || 0) / totalVotes) * 100 : 0;
-    return share >= 5 || electorate[party.id] > 0;
+    return share >= 5;
   });
   const allocated = Object.fromEntries(PARTY_LIST.map((party) => [party.id, 0]));
   if (!qualified.length) return allocated;
